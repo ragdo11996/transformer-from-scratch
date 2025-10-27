@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 from attention import MultiHeadAttention
 from ffn import PositionwiseFFN
 
@@ -40,9 +41,9 @@ class TransformerEncoder(nn.Module):
         return logits, attns
 
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, max_len=512):
+    def __init__(self, d_model, max_len=512, dropout=0.1):
         super().__init__()
-        import math
+        self.dropout = nn.Dropout(dropout)
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
@@ -54,5 +55,5 @@ class PositionalEncoding(nn.Module):
     def forward(self, x):
         # x: (B, T, d_model)
         T = x.size(1)
-        x = x + self.pe[:, :T, :].to(x.device)
-        return x
+        x = x + self.pe[:, :T, :].to(x.device).detach()
+        return self.dropout(x)
